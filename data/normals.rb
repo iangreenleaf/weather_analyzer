@@ -1,11 +1,55 @@
-require 'csv'
 # 30-year averages supplied by NOAA.
 #
-# This imports the raw data (located in ./normals) into Couch.
-#
-# Files in which we are interested:
-#
-#  * station-inventories/allstations.txt: Links a station id to name & location.
+# This script imports the raw data (located in ./normals) into Couch.
+
+require 'csv'
+
+# Handles the messy business of parsing values out of NOAA's provided
+# plain-text data files.
+class NoaaDataFile
+  def initialize filename, defn
+    @defn = defn.dup
+    @filename = filename
+  end
+
+  def each_row
+    IO.foreach(@filename) do |row|
+      result = {}
+      @defn.each do |key, schema|
+        if schema[:repeat]
+          result[key] = schema[:repeat].times.map do |i|
+            start = schema[:start] - 1 + i * schema[:length]
+            normalize row[start, schema[:length]], schema
+          end
+        else
+          result[key] = normalize row[(schema[:cols].min-1)..(schema[:cols].max-1)], schema
+        end
+      end
+      yield result
+    end
+  end
+
+  protected
+  def normalize val, schema
+    val = parse_num val if schema[:parse]
+    val.try :strip
+  end
+
+  def parse_num val
+    # Handle NOAA completeness flags
+    unless (val =~ /\A\s*(-?\d+)[CSRPQ]\s*\Z/).nil?
+      val = $1
+    end
+    # Handle special values for missing/bad data
+    if %w[-9999 -8888 -7777 -6666 -5555].include? val
+      val = nil
+    end
+
+    val
+  end
+end
+
+#  station-inventories/allstations.txt: Links a station id to name & location.
 #
 #      The variables in each record include the following:
 #      ------------------------------
@@ -55,22 +99,35 @@ require 'csv'
 #      METHOD*    is an indication of whether a "traditional" or a "pseudonormals"
 #                 approach was utilized for temperature or precipitation. This field
 #                 in only found in prcp-inventory.txt and temp-inventory.txt
-def parse_columns row, defn
-  result = {}
-  defn.each do |key, bounds|
-    result[key] = row[(bounds.begin-1)..(bounds.end-1)].strip
-  end
-  result
-end
-IO.foreach("data/normals/station-inventories/allstations.txt") do |row|
-  defn = {
-    id: 1..11,
-    latitude: 13..20,
-    longitude: 22..30,
-    elevation: 32..37,
-    state: 39..40,
-    name: 42..71,
+stations_input = NoaaDataFile.new(
+  "data/normals/station-inventories/allstations.txt",
+  {
+    id: { cols: 1..11 },
+    latitude: { cols: 13..20 },
+    longitude: { cols: 22..30 },
+    elevation: { cols: 32..37 },
+    state: { cols: 39..40 },
+    name: { cols: 42..71 },
   }
-  station = Station.new parse_columns(row, defn)
+)
+stations_input.each_row do |row|
+  Station.find(row[:id]).try :destroy
+  station = Station.new row
+  station.save!
+end
+
+# products/precipitation/mly-snow-normal.txt: Monthly snowfall normals.
+snowfall_input = NoaaDataFile.new(
+  "data/normals/products/precipitation/mly-snow-normal.txt",
+  {
+    id: { cols: 1..11 },
+    months: { repeat: 12, length: 7, start: 19, parse: true },
+  }
+)
+snowfall_input.each_row do |row|
+  station = Station.find row[:id]
+  station.monthly.each do |month|
+    month.snowfall = row[:months].shift
+  end
   station.save!
 end
