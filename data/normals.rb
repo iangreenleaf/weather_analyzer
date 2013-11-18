@@ -30,9 +30,12 @@ class NoaaDataFile
   end
 
   protected
+  # May return either a Numeric, or a String. Don't count on one in particular.
   def normalize val, schema
     val = parse_num val if schema[:parse]
-    val.try :strip
+    val = val.try :strip
+    val = val.to_f / schema[:divisor] if schema[:divisor].present?
+    val
   end
 
   def parse_num val
@@ -121,7 +124,7 @@ snowfall_input = NoaaDataFile.new(
   "data/normals/products/precipitation/mly-snow-normal.txt",
   {
     id: { cols: 1..11 },
-    months: { repeat: 12, length: 7, start: 19, parse: true },
+    months: { repeat: 12, length: 7, start: 19, parse: true, divisor: 10 },
   }
 )
 snowfall_input.each_row do |row|
