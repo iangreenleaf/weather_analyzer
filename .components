@@ -1,0 +1,9 @@
+---
+:orm: couchrest
+:test: rspec
+:mock: none
+:script: none
+:renderer: slim
+:stylesheet: scss
+:namespace: WeatherAnalyzer
+:migration_format: number
