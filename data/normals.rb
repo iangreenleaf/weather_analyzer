@@ -8,7 +8,7 @@ require 'csv'
 # plain-text data files.
 class NoaaDataFile < CouchRest::Model::Base
   property :md5, String
-  property :defn, Hash
+  property :defn, HashWithIndifferentAccess
   timestamps!
   attr_accessor :stale
 
@@ -23,10 +23,7 @@ class NoaaDataFile < CouchRest::Model::Base
       m = self.new filename: filename
     end
 
-    md5 = Digest::MD5.file filename
-    m.stale = defn.as_json != m.defn || m.md5 != md5.to_s
-    m.defn = defn
-    m.md5 = md5
+    m.defn = defn.as_json.with_indifferent_access
 
     m
   end
@@ -40,7 +37,8 @@ class NoaaDataFile < CouchRest::Model::Base
   end
 
   def each_row
-    unless stale
+    self.md5 = Digest::MD5.file(filename).to_s
+    unless md5_changed? or defn_changed?
       logger.info "#{filename} has already been parsed, skipping."
       return
     end
@@ -49,7 +47,7 @@ class NoaaDataFile < CouchRest::Model::Base
     progress = ProgressBar.create total: total_lines, format: "%a|%B%c/%C|%e", smoothing: 0.4
 
     IO.foreach(filename) do |row|
-      result = {}
+      result = HashWithIndifferentAccess.new
       defn.each do |key, schema|
         if schema[:repeat]
           result[key] = schema[:repeat].times.map do |i|
