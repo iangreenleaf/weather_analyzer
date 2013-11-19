@@ -6,16 +6,51 @@ require 'csv'
 
 # Handles the messy business of parsing values out of NOAA's provided
 # plain-text data files.
-class NoaaDataFile
-  def initialize filename, defn
-    @defn = defn.dup
-    @filename = filename
+class NoaaDataFile < CouchRest::Model::Base
+  property :md5, String
+  property :defn, Hash
+  timestamps!
+  attr_accessor :stale
+
+  # The usual find or create logic.
+  #
+  # Also does some stuff with checking if the saved record reflects
+  # the latest physical input file, which maybe doesn't belong here.
+  def self.find_or_create filename, defn
+    m = self.find filename
+
+    if m.nil?
+      m = self.new filename: filename
+    end
+
+    md5 = Digest::MD5.file filename
+    m.stale = defn.as_json != m.defn || m.md5 != md5.to_s
+    m.defn = defn
+    m.md5 = md5
+
+    m
+  end
+
+  def filename
+    self['_id']
+  end
+
+  def filename= val
+    self['_id'] = val
   end
 
   def each_row
-    IO.foreach(@filename) do |row|
+    unless stale
+      logger.info "#{filename} has already been parsed, skipping."
+      return
+    end
+    logger.info "Importing data from #{filename}"
+    total_lines = %x{wc -l #{filename}}.split.first.to_i
+    progress = ProgressBar.create total: total_lines, format: "%a|%B%c/%C|%e", smoothing: 0.4
+
+    IO.foreach(filename) do |row|
       result = {}
-      @defn.each do |key, schema|
+      defn.each do |key, schema|
         if schema[:repeat]
           result[key] = schema[:repeat].times.map do |i|
             start = schema[:start] - 1 + i * schema[:length]
@@ -26,7 +61,10 @@ class NoaaDataFile
         end
       end
       yield result
+      progress.increment
     end
+
+    save!
   end
 
   protected
@@ -102,7 +140,7 @@ end
 #      METHOD*    is an indication of whether a "traditional" or a "pseudonormals"
 #                 approach was utilized for temperature or precipitation. This field
 #                 in only found in prcp-inventory.txt and temp-inventory.txt
-stations_input = NoaaDataFile.new(
+stations_input = NoaaDataFile.find_or_create(
   "data/normals/station-inventories/allstations.txt",
   {
     id: { cols: 1..11 },
@@ -120,7 +158,7 @@ stations_input.each_row do |row|
 end
 
 # products/precipitation/mly-snow-normal.txt: Monthly snowfall normals.
-snowfall_input = NoaaDataFile.new(
+snowfall_input = NoaaDataFile.find_or_create(
   "data/normals/products/precipitation/mly-snow-normal.txt",
   {
     id: { cols: 1..11 },
@@ -136,7 +174,7 @@ snowfall_input.each_row do |row|
 end
 
 # products/precipitation/mly-prcp-normal.txt: Monthly precipitation normals.
-precip_input = NoaaDataFile.new(
+precip_input = NoaaDataFile.find_or_create(
   "data/normals/products/precipitation/mly-prcp-normal.txt",
   {
     id: { cols: 1..11 },
@@ -153,7 +191,7 @@ end
 
 # products/precipitation/mly-prcp-avgnds-ge010hi.txt: Days per month with
 # precipitation of 0.1" or greater. Using this for number of "rainy days".
-rainy_days_input = NoaaDataFile.new(
+rainy_days_input = NoaaDataFile.find_or_create(
   "data/normals/products/precipitation/mly-prcp-avgnds-ge010hi.txt",
   {
     id: { cols: 1..11 },
@@ -170,7 +208,7 @@ end
 
 # products/hourly/hly-clod-pctovc.txt: Daily percentages of overcast cloud cover.
 # This isn't really in the format we want. Maybe we'll use a Couch view.
-cloud_input = NoaaDataFile.new(
+cloud_input = NoaaDataFile.find_or_create(
   "data/normals/products/hourly/hly-clod-pctovc.txt",
   {
     id: { cols: 1..11 },
