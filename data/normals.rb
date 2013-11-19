@@ -222,8 +222,10 @@ cloud_input.each_row do |row|
   day_num = Date.new(2001, row[:month].to_i, row[:day].to_i).yday
   station.daily[day_num-1].overcast_percentages = row[:hours]
 end
-progress = ProgressBar.create total: cloud_unsaved.count, format: "%a|%B%c/%C|%e", smoothing: 0.4
-cloud_unsaved.each do |_, station|
-  station.save!
-  progress.increment
+unless cloud_unsaved.blank?
+  progress = ProgressBar.create total: cloud_unsaved.count, format: "%a|%B%c/%C|%e", smoothing: 0.4
+  cloud_unsaved.each do |_, station|
+    station.save!
+    progress.increment
+  end
 end
