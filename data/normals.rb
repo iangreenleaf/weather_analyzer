@@ -134,3 +134,55 @@ snowfall_input.each_row do |row|
   end
   station.save!
 end
+
+# products/precipitation/mly-prcp-normal.txt: Monthly precipitation normals.
+precip_input = NoaaDataFile.new(
+  "data/normals/products/precipitation/mly-prcp-normal.txt",
+  {
+    id: { cols: 1..11 },
+    months: { repeat: 12, length: 7, start: 19, parse: true, divisor: 100 },
+  }
+)
+precip_input.each_row do |row|
+  station = Station.find row[:id]
+  station.monthly.each do |month|
+    month.precipitation = row[:months].shift
+  end
+  station.save!
+end
+
+# products/precipitation/mly-prcp-avgnds-ge010hi.txt: Days per month with
+# precipitation of 0.1" or greater. Using this for number of "rainy days".
+rainy_days_input = NoaaDataFile.new(
+  "data/normals/products/precipitation/mly-prcp-avgnds-ge010hi.txt",
+  {
+    id: { cols: 1..11 },
+    months: { repeat: 12, length: 7, start: 19, parse: true, divisor: 10 },
+  }
+)
+rainy_days_input.each_row do |row|
+  station = Station.find row[:id]
+  station.monthly.each do |month|
+    month.rainy_days = row[:months].shift
+  end
+  station.save!
+end
+
+# products/hourly/hly-clod-pctovc.txt: Daily percentages of overcast cloud cover.
+# This isn't really in the format we want. Maybe we'll use a Couch view.
+cloud_input = NoaaDataFile.new(
+  "data/normals/products/hourly/hly-clod-pctovc.txt",
+  {
+    id: { cols: 1..11 },
+    month: { cols: 13..14 },
+    day: { cols: 16..17 },
+    hours: { repeat: 24, length: 7, start: 19, parse: true, divisor: 10 },
+  }
+)
+cloud_input.each_row do |row|
+  station = Station.find row[:id]
+  # Year doesn't matter, just need non-leap year
+  day_num = Date.new(2001, row[:month].to_i, row[:day].to_i).yday
+  station.daily[day_num-1].overcast_percentages = row[:hours]
+  station.save!
+end

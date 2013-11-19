@@ -9,5 +9,11 @@ class Station < CouchRest::Model::Base
 
   property :monthly, array: true, default: (12.times.map {{}}) do |month|
     month.property :snowfall, Float
+    month.property :precipitation, Float
+    month.property :rainy_days, Integer
+  end
+
+  property :daily, array: true, default: (365.times.map {{}}) do |month|
+    month.property :overcast_percentages, Array
   end
 end
