@@ -217,10 +217,15 @@ cloud_input = NoaaDataFile.find_or_create(
     hours: { repeat: 24, length: 7, start: 19, parse: true, divisor: 10 },
   }
 )
+cloud_unsaved = {}
 cloud_input.each_row do |row|
-  station = Station.find row[:id]
+  station = (cloud_unsaved[row[:id]] ||= Station.find row[:id])
   # Year doesn't matter, just need non-leap year
   day_num = Date.new(2001, row[:month].to_i, row[:day].to_i).yday
   station.daily[day_num-1].overcast_percentages = row[:hours]
+end
+progress = ProgressBar.create total: cloud_unsaved.count, format: "%a|%B%c/%C|%e", smoothing: 0.4
+cloud_unsaved.each do |_, station|
   station.save!
+  progress.increment
 end
