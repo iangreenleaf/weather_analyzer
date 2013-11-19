@@ -6,7 +6,7 @@ require 'csv'
 
 # Handles the messy business of parsing values out of NOAA's provided
 # plain-text data files.
-class NoaaDataFile < CouchRest::Model::Base
+class ::NoaaDataFile < CouchRest::Model::Base
   property :md5, String
   property :defn, HashWithIndifferentAccess
   timestamps!
