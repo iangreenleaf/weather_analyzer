@@ -68,8 +68,8 @@ class ::NoaaDataFile < CouchRest::Model::Base
   protected
   # May return either a Numeric, or a String. Don't count on one in particular.
   def normalize val, schema
-    val = parse_num val if schema[:parse]
     val = val.try :strip
+    val = parse_num val if schema[:parse]
     val = val.to_f / schema[:divisor] if schema[:divisor].present?
     val
   end
