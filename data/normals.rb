@@ -4,6 +4,10 @@
 
 require 'csv'
 
+# Depends on the first 2 args being "runner" and __FILE__.
+# Sketchy.
+cwd = ARGV[2] || 'data/normals'
+
 # Handles the messy business of parsing values out of NOAA's provided
 # plain-text data files.
 class ::NoaaDataFile < CouchRest::Model::Base
@@ -139,7 +143,7 @@ end
 #                 approach was utilized for temperature or precipitation. This field
 #                 in only found in prcp-inventory.txt and temp-inventory.txt
 stations_input = NoaaDataFile.find_or_create(
-  "data/normals/station-inventories/allstations.txt",
+  "#{cwd}/station-inventories/allstations.txt",
   {
     id: { cols: 1..11 },
     latitude: { cols: 13..20 },
@@ -157,7 +161,7 @@ end
 
 # products/precipitation/mly-snow-normal.txt: Monthly snowfall normals.
 snowfall_input = NoaaDataFile.find_or_create(
-  "data/normals/products/precipitation/mly-snow-normal.txt",
+  "#{cwd}/products/precipitation/mly-snow-normal.txt",
   {
     id: { cols: 1..11 },
     months: { repeat: 12, length: 7, start: 19, parse: true, divisor: 10 },
@@ -173,7 +177,7 @@ end
 
 # products/precipitation/mly-prcp-normal.txt: Monthly precipitation normals.
 precip_input = NoaaDataFile.find_or_create(
-  "data/normals/products/precipitation/mly-prcp-normal.txt",
+  "#{cwd}/products/precipitation/mly-prcp-normal.txt",
   {
     id: { cols: 1..11 },
     months: { repeat: 12, length: 7, start: 19, parse: true, divisor: 100 },
@@ -190,7 +194,7 @@ end
 # products/precipitation/mly-prcp-avgnds-ge010hi.txt: Days per month with
 # precipitation of 0.1" or greater. Using this for number of "rainy days".
 rainy_days_input = NoaaDataFile.find_or_create(
-  "data/normals/products/precipitation/mly-prcp-avgnds-ge010hi.txt",
+  "#{cwd}/products/precipitation/mly-prcp-avgnds-ge010hi.txt",
   {
     id: { cols: 1..11 },
     months: { repeat: 12, length: 7, start: 19, parse: true, divisor: 10 },
@@ -207,7 +211,7 @@ end
 # products/hourly/hly-clod-pctovc.txt: Daily percentages of overcast cloud cover.
 # This isn't really in the format we want. Maybe we'll use a Couch view.
 cloud_input = NoaaDataFile.find_or_create(
-  "data/normals/products/hourly/hly-clod-pctovc.txt",
+  "#{cwd}/products/hourly/hly-clod-pctovc.txt",
   {
     id: { cols: 1..11 },
     month: { cols: 13..14 },

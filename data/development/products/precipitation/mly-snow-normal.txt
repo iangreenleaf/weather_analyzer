@@ -1,0 +1,6 @@
+USC00040136           0C     0S     0S     1S     0S     0S     0C     0S     0S     0P     0S     0S
+USC00040983           0S     0C     0S     0C     0C     0C     0C     0C     0C     0S     0C     0C
+USC00041758           0S     0S     0S     0S     0S     0S     0C     0S     0C     0S     0S     0S
+USW00023188           0P     0P     0P     0P     0P     0P     0P     0P     0P     0P     0P     0P
+USW00014922         122P    77P   103P    24P -7777P     0P     0S     0S -7777S     6S    93P   119P
+USW00024229           5P    21P     2P     0P     0P     0P     0P     0P     0P     0P     2P    13P

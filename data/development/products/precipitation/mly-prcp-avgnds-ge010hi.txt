@@ -1,0 +1,6 @@
+USC00040136          47S    57S    49S    31S     9S     4S     4S     6S     8S    16P    31S    42S
+USC00040983          21C    28S    22S     6C     2C     1C     7C    12C     5S     6S     9S    18C
+USC00041758          36S    43C    34S    18S     1S     1S     1S -7777C     3C     8C    19S    27S
+USW00023188          41C    43C    34C    19C     4C     2C     1C     1C     4C    13C    22C    33C
+USW00014922          30C    26C    48C    59C    77C    74C    64C    61C    59C    47C    42C    31C
+USW00024229         118C    92C   107C    83C    72C    45C    19C    18C    33C    74C   126C   123C

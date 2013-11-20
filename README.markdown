@@ -8,7 +8,11 @@ I've been using mostly the [NOAA climate normals](http://www.ncdc.noaa.gov/cdo-w
 
 Put em in `data/normals`, and run:
 
-    padrino runner data/normals.rb
+    padrino runner data/normals.rb data/development
+
+Or once you've FTP'd an entire text dump from NOAA, pass the prod dir instead:
+
+    padrino runner data/normals.rb data/noaa_data
 
 ## TODO ##
 
